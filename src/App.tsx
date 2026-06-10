@@ -4,7 +4,7 @@ import { MetadataPreview } from "./components/MetadataPreview";
 import { SearchModal } from "./components/SearchModal";
 import { UploadZone } from "./components/UploadZone";
 import { analyzeBrowserFiles, applyTagsInBrowser } from "./lib/browserFileService";
-import { mergeAppliedMetadata } from "./lib/tagging";
+import { isBrowserSimulationPath, mergeAppliedMetadata } from "./lib/tagging";
 import type { AudioFileRecord, SearchResultPayload, SuggestedMetadata } from "./lib/types";
 
 type Theme = "light" | "dark";
@@ -129,7 +129,7 @@ export default function App() {
     setError(null);
 
     try {
-      const result = window.tagFlow
+      const result = window.tagFlow && !isBrowserSimulationPath(file.path)
         ? await window.tagFlow.applyTags(file, suggestion)
         : await applyTagsInBrowser(file, suggestion);
       setFiles((current) =>

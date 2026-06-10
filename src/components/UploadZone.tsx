@@ -9,13 +9,20 @@ interface UploadZoneProps {
   onImportFiles: (files: File[]) => void;
 }
 
-type ElectronFile = File & {
-  path?: string;
-};
-
 function getDroppedPaths(files: FileList): string[] {
+  if (!window.tagFlow) {
+    return [];
+  }
+
   return Array.from(files)
-    .map((file) => (file as ElectronFile).path)
+    .map((file) => {
+      try {
+        // Electron 32+ removed File.path; resolve dropped files via preload instead.
+        return window.tagFlow.getPathForFile(file);
+      } catch {
+        return "";
+      }
+    })
     .filter((value): value is string => Boolean(value));
 }
 

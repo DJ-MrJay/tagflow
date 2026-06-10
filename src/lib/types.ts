@@ -133,6 +133,7 @@ export interface ApplyTagsResult {
 
 export interface TagFlowApi {
   openFileDialog: () => Promise<string[]>;
+  getPathForFile: (file: File) => string;
   analyzeFiles: (paths: string[]) => Promise<AudioFileRecord[]>;
   manualSearch: (
     file: AudioFileRecord,
