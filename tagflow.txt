@@ -1,0 +1,280 @@
+Paste this directly into Codex:
+
+```txt
+Build a desktop application called **TagFlow** using Electron + React + TypeScript + Vite.
+
+Core purpose:
+The app should help users automatically tag local music files by fetching metadata from the iTunes Search API and writing that metadata back into the audio files.
+
+The UI must be very simple, clean and fast:
+- Minimal header with app name
+- Drag and drop upload area
+- File queue table
+- Metadata preview panel
+- Apply tags button
+- Skip button
+- Batch apply option
+- Dark/light mode optional but keep design minimal
+
+SUPPORTED FILES (MVP):
+- MP3 (full support)
+- M4A (prepare architecture for support later)
+- FLAC (prepare architecture for support later)
+
+Use:
+- Electron → desktop filesystem access
+- React → frontend
+- TypeScript → type safety
+- Vite → frontend bundling
+- music-metadata → read existing tags
+- node-id3 → write MP3 tags
+- axios or fetch → iTunes API requests
+- fs-extra → backups
+
+---------------------------------------------------
+APP FLOW
+---------------------------------------------------
+
+1. User imports audio files via:
+- drag and drop
+OR
+- file picker
+
+2. App scans each file and reads:
+- title
+- artist
+- album
+- genre
+- year
+- duration
+- existing artwork
+- filename
+- file extension
+
+3. The app determines how to search iTunes metadata.
+
+SCENARIO A: FILE ALREADY HAS EXISTING METADATA
+Example:
+Title: Blinding Lights
+Artist: The Weeknd
+
+Search query:
+"The Weeknd Blinding Lights"
+
+---------------------------------------------------
+SCENARIO B: FILE HAS NO EXISTING METADATA/TAGS
+---------------------------------------------------
+
+This is extremely important.
+
+If the file has:
+- empty title
+- empty artist
+- empty album
+- no tags at all
+
+Then fallback to using the filename.
+
+Example filename:
+01_Drake-Find_Your_Love_320kbps.mp3
+
+The app should clean the filename by:
+
+- removing file extensions
+- removing underscores
+- removing unnecessary dashes
+- removing track numbers
+- removing bitrate text
+- removing duplicate spaces
+- removing terms like:
+  - official audio
+  - audio
+  - lyrics
+  - HD
+  - HQ
+  - remix
+  - mp3
+  - 320kbps
+
+Example output:
+"Drake Find Your Love"
+
+Provide option to type in artist and title if known.
+
+Then search iTunes using the cleaned result.
+
+If multiple results are returned:
+- rank them using similarity scoring
+- show the top matches
+
+If confidence is too low:
+show:
+"Manual review required"
+
+---------------------------------------------------
+ITUNES API
+---------------------------------------------------
+
+Use:
+
+https://itunes.apple.com/search?term={query}&media=music&entity=song&limit=10
+
+Retrieve:
+
+- trackName
+- artistName
+- collectionName
+- primaryGenreName
+- releaseDate
+- trackNumber
+- discNumber
+- artworkUrl100
+- all available tag info
+
+---------------------------------------------------
+MATCH ENGINE
+---------------------------------------------------
+
+Create a confidence scoring system based on:
+
+- title similarity
+- artist similarity
+- album similarity
+- duration similarity (if available)
+
+Return:
+
+High confidence = auto-highlight
+Medium confidence = manual review
+Low confidence = skip recommendation
+
+---------------------------------------------------
+PREVIEW PANEL
+---------------------------------------------------
+
+For every file show:
+
+LEFT SIDE:
+Current metadata
+- title
+- artist
+- album
+- artwork
+- filename
+
+RIGHT SIDE:
+Suggested metadata from iTunes
+- title
+- artist
+- album
+- genre
+- release year
+- artwork
+- confidence score
+
+Buttons:
+- Apply
+- Skip
+- Search manually
+
+---------------------------------------------------
+WRITE TAGS
+---------------------------------------------------
+
+Before modifying any file:
+
+Create backup:
+filename.mp3.bak
+
+Write:
+
+- title
+- artist
+- album
+- album artist
+- genre
+- year
+- track number
+- artwork
+- comments
+- performer
+- composer
+- publisher
+- ISRC
+- lyrics
+- rating
+
+Never overwrite files automatically.
+
+User must explicitly click:
+Apply
+
+---------------------------------------------------
+BATCH MODE
+---------------------------------------------------
+
+Add:
+"Apply all high confidence matches"
+
+This should process only files above a confidence threshold.
+
+---------------------------------------------------
+ERROR HANDLING
+---------------------------------------------------
+
+Handle:
+
+- unsupported file types
+- corrupted files
+- failed iTunes requests
+- duplicate matches
+- missing artwork
+- write failures
+
+---------------------------------------------------
+FOLDER STRUCTURE
+---------------------------------------------------
+
+tagflow/
+├── electron/
+│   ├── main.ts
+│   ├── preload.ts
+│   ├── file-service.ts
+│   └── tag-service.ts
+│
+├── src/
+│   ├── components/
+│   │   ├── UploadZone.tsx
+│   │   ├── FileTable.tsx
+│   │   ├── MetadataPreview.tsx
+│   │   └── SearchModal.tsx
+│
+│   ├── lib/
+│   │   ├── itunes.ts
+│   │   ├── matcher.ts
+│   │   ├── filenameCleaner.ts
+│   │   └── types.ts
+│
+│   ├── App.tsx
+│   └── main.tsx
+
+---------------------------------------------------
+DELIVERABLE
+---------------------------------------------------
+
+Build a working MVP first.
+
+Prioritise:
+1. file upload
+2. metadata reading
+3. fallback filename parsing for files with zero tags
+4. iTunes lookup
+5. metadata preview
+6. safe tag writing
+7. simple polished UI
+
+Do not overcomplicate the design.
+Focus on functionality first.
+```
+
+That fallback logic for completely untagged files is what will make this genuinely useful, especially for downloaded music libraries with messy filenames.

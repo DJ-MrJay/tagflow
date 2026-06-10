@@ -1,0 +1,69 @@
+{
+  "name": "tagflow",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Desktop music tagging app powered by Electron and the iTunes Search API.",
+  "main": "dist-electron/main.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "dist:win": "scripts\\dist-win.cmd"
+  },
+  "keywords": [
+    "electron",
+    "react",
+    "music",
+    "tagging"
+  ],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "fs-extra": "^11.3.5",
+    "music-metadata": "^11.13.0",
+    "node-id3": "^0.2.9",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "taglib-wasm": "^1.2.2"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "@types/node": "^25.9.2",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.2",
+    "electron": "^42.4.0",
+    "electron-builder": "^26.15.2",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.16",
+    "vite-plugin-electron": "^1.0.4"
+  },
+  "build": {
+    "appId": "com.tagflow.app",
+    "productName": "TagFlow",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "artifactName": "${productName}-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "TagFlow"
+    }
+  }
+}
