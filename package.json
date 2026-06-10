@@ -55,7 +55,7 @@
           ]
         }
       ],
-      "icon": "build/icon.ico",
+      "icon": "build/TagFlow.ico",
       "artifactName": "${productName}-Setup-${version}.${ext}"
     },
     "nsis": {

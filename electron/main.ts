@@ -7,6 +7,7 @@ import { IPC_CHANNELS } from "../src/lib/types";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const devIconPath = path.join(process.cwd(), "build", "TagFlow.ico");
 
 function createWindow(): void {
   const window = new BrowserWindow({
@@ -15,6 +16,7 @@ function createWindow(): void {
     minWidth: 1100,
     minHeight: 760,
     backgroundColor: "#0f1115",
+    icon: app.isPackaged ? undefined : devIconPath,
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,
