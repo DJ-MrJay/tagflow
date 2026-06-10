@@ -401,6 +401,7 @@ export async function applyTagsInBrowser(
       backupPath: null,
       error: "The browser copy of this file is no longer cached. Re-import it and try again.",
       appliedFormat: null,
+      appliedSuggestion: null,
     };
   }
 
@@ -425,6 +426,7 @@ export async function applyTagsInBrowser(
       backupPath: triggerDownload(updatedFile),
       error: null,
       appliedFormat: file.extension,
+      appliedSuggestion: suggestion,
     };
   } catch (error) {
     return {
@@ -433,6 +435,7 @@ export async function applyTagsInBrowser(
       backupPath: null,
       error: `Failed to write tags: ${errorMessage(error)}`,
       appliedFormat: null,
+      appliedSuggestion: null,
     };
   }
 }

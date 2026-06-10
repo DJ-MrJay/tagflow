@@ -135,7 +135,9 @@ export default function App() {
       setFiles((current) =>
         updateFile(current, file.id, (entry) => ({
           ...entry,
-          current: result.success ? mergeAppliedMetadata(entry.current, suggestion) : entry.current,
+          current: result.success
+            ? mergeAppliedMetadata(entry.current, result.appliedSuggestion ?? suggestion)
+            : entry.current,
           status: result.success ? "applied" : "error",
           error: result.error,
           backupPath: result.backupPath,

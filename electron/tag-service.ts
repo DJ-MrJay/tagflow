@@ -1,6 +1,7 @@
 import fs from "fs-extra";
-import { applyCoverArt, applyTags, setBufferMode } from "taglib-wasm/simple";
-import { buildTagPayload } from "../src/lib/tagging";
+import { TagLib } from "taglib-wasm";
+import { hydrateSuggestedMetadata } from "../src/lib/itunes";
+import { buildMp4ItemMap, buildPropertyMap } from "../src/lib/tagging";
 import type {
   ApplyTagsResult,
   AudioFileRecord,
@@ -21,12 +22,20 @@ const WRITE_PENDING_MESSAGES: Partial<Record<SupportedExtension, string>> = {
   unknown: "Unsupported file format.",
 };
 
-// Packaged Electron on Windows can hit a broken WASI seek path in taglib-wasm.
-// Force the in-memory writer path consistently for desktop tagging.
-setBufferMode(true);
+let tagLibPromise: Promise<TagLib> | null = null;
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "Unknown error";
+}
+
+function getTagLib(): Promise<TagLib> {
+  if (!tagLibPromise) {
+    tagLibPromise = TagLib.initialize({
+      forceWasmType: "emscripten",
+    });
+  }
+
+  return tagLibPromise;
 }
 
 async function createBackup(filePath: string): Promise<string> {
@@ -57,40 +66,71 @@ async function fetchArtwork(
     return null;
   }
 
-  const response = await fetch(artworkUrl);
-  if (!response.ok) {
+  try {
+    const response = await fetch(artworkUrl);
+    if (!response.ok) {
+      return null;
+    }
+
+    const mime = response.headers.get("content-type") || "image/jpeg";
+    const arrayBuffer = await response.arrayBuffer();
+
+    return {
+      bytes: new Uint8Array(arrayBuffer),
+      mime,
+    };
+  } catch {
     return null;
   }
-
-  const mime = response.headers.get("content-type") || "image/jpeg";
-  const arrayBuffer = await response.arrayBuffer();
-
-  return {
-    bytes: new Uint8Array(arrayBuffer),
-    mime,
-  };
 }
 
 const universalWriter: TagWriterStrategy = {
   extension: "mp3",
   async write(file, suggestion, backupPath) {
-    const original = await fs.readFile(file.path);
-    let modified = await applyTags(new Uint8Array(original), buildTagPayload(suggestion));
+    const resolvedSuggestion = await hydrateSuggestedMetadata(suggestion);
+    const original = new Uint8Array(await fs.readFile(file.path));
+    const tagLib = await getTagLib();
+    const audioFile = await tagLib.open(original);
 
-    const artwork = await fetchArtwork(suggestion.artworkUrl);
-    if (artwork) {
-      modified = await applyCoverArt(modified, artwork.bytes, artwork.mime);
+    try {
+      audioFile.setProperties(buildPropertyMap(resolvedSuggestion));
+
+      if (file.extension === "m4a" && audioFile.isMP4()) {
+        for (const [key, value] of Object.entries(buildMp4ItemMap(resolvedSuggestion))) {
+          audioFile.setMP4Item(key, value);
+        }
+      }
+
+      if (resolvedSuggestion.upc) {
+        audioFile.setProperty("UPC", resolvedSuggestion.upc);
+      }
+
+      const artwork = await fetchArtwork(resolvedSuggestion.artworkUrl);
+      if (artwork) {
+        audioFile.setPictures([
+          {
+            mimeType: artwork.mime,
+            data: artwork.bytes,
+            type: "FrontCover",
+            description: "Cover",
+          },
+        ]);
+      }
+
+      audioFile.save();
+      await fs.writeFile(file.path, Buffer.from(audioFile.getFileBuffer()));
+
+      return {
+        success: true,
+        path: file.path,
+        backupPath,
+        error: null,
+        appliedFormat: file.extension,
+        appliedSuggestion: resolvedSuggestion,
+      };
+    } finally {
+      audioFile.dispose();
     }
-
-    await fs.writeFile(file.path, Buffer.from(modified));
-
-    return {
-      success: true,
-      path: file.path,
-      backupPath,
-      error: null,
-      appliedFormat: file.extension,
-    };
   },
 };
 
@@ -112,6 +152,7 @@ export async function applyTagsToFile(
       backupPath: null,
       error: WRITE_PENDING_MESSAGES[file.extension] || "Unsupported file format.",
       appliedFormat: null,
+      appliedSuggestion: null,
     };
   }
 
@@ -127,6 +168,7 @@ export async function applyTagsToFile(
       backupPath,
       error: `Failed to write tags: ${errorMessage(error)}`,
       appliedFormat: null,
+      appliedSuggestion: null,
     };
   }
 }

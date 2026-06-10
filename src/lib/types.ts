@@ -75,6 +75,8 @@ export interface MatchBreakdown {
 
 export interface SuggestedMetadata {
   trackId: number;
+  collectionId: number | null;
+  artistId: number | null;
   title: string;
   artist: string;
   album: string;
@@ -82,16 +84,39 @@ export interface SuggestedMetadata {
   year: string;
   artworkUrl: string | null;
   trackNumber: number | null;
+  trackCount: number | null;
   discNumber: number | null;
+  discCount: number | null;
   durationMs: number | null;
   releaseDate: string | null;
   previewUrl: string | null;
+  trackViewUrl: string | null;
+  collectionViewUrl: string | null;
+  countryCode: string | null;
+  explicit: boolean | null;
   composer: string | null;
+  composerSort: string | null;
   publisher: string | null;
   isrc: string | null;
+  upc: string | null;
   lyrics: string | null;
   rating: number | null;
   albumArtist: string | null;
+  albumArtistSort: string | null;
+  artistSort: string | null;
+  albumSort: string | null;
+  titleSort: string | null;
+  performer: string | null;
+  contentType: string | null;
+  copyright: string | null;
+  genreId: number | null;
+  appleStorefrontId: number | null;
+  appleArtistId: number | null;
+  applePlaylistId: number | null;
+  appleCatalogId: number | null;
+  appleCmId: number | null;
+  vendor: string | null;
+  editorialNotes: string | null;
   comments: string | null;
   confidence: MatchBreakdown;
   notes: string[];
@@ -129,6 +154,7 @@ export interface ApplyTagsResult {
   backupPath: string | null;
   error: string | null;
   appliedFormat: SupportedExtension | null;
+  appliedSuggestion?: SuggestedMetadata | null;
 }
 
 export interface TagFlowApi {
