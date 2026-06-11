@@ -1,13 +1,19 @@
 export const SUPPORTED_EXTENSIONS = ["mp3", "m4a", "flac"] as const;
+export const LOOKUP_SERVICES = ["apple", "spotify"] as const;
 
 export const IPC_CHANNELS = {
   openFileDialog: "dialog:open-files",
   analyzeFiles: "files:analyze",
   manualSearch: "search:manual",
   applyTags: "tags:apply",
+  getCapabilities: "app:capabilities",
+  openReadme: "app:open-readme",
+  menuAction: "menu:action",
 } as const;
 
 export type SupportedExtension = (typeof SUPPORTED_EXTENSIONS)[number] | "unknown";
+export type LookupService = (typeof LOOKUP_SERVICES)[number];
+export type LookupPreference = LookupService | "auto";
 export type SearchSource = "tags" | "filename" | "manual";
 export type MatchConfidenceLevel = "high" | "medium" | "low";
 export type FileStatus =
@@ -74,7 +80,7 @@ export interface MatchBreakdown {
 }
 
 export interface SuggestedMetadata {
-  trackId: number;
+  trackId: string;
   collectionId: number | null;
   artistId: number | null;
   title: string;
@@ -118,6 +124,8 @@ export interface SuggestedMetadata {
   vendor: string | null;
   editorialNotes: string | null;
   comments: string | null;
+  lookupSource: LookupService;
+  sourceUrl: string | null;
   confidence: MatchBreakdown;
   notes: string[];
 }
@@ -133,6 +141,8 @@ export interface AudioFileRecord {
   bestSuggestion: SuggestedMetadata | null;
   status: FileStatus;
   error: string | null;
+  lookupWarning: string | null;
+  resolvedSources: LookupService[];
   writeSupported: boolean;
   backupPath: string | null;
 }
@@ -141,11 +151,15 @@ export interface ManualSearchInput {
   artist: string;
   title: string;
   album: string;
+  source: LookupPreference;
 }
 
 export interface SearchResultPayload {
   searchSeed: SearchSeed;
   suggestions: SuggestedMetadata[];
+  warning: string | null;
+  resolvedSources: LookupService[];
+  lookupSource: LookupPreference;
 }
 
 export interface ApplyTagsResult {
@@ -157,10 +171,33 @@ export interface ApplyTagsResult {
   appliedSuggestion?: SuggestedMetadata | null;
 }
 
+export interface TagFlowCapabilities {
+  desktop: boolean;
+  spotifyLookup: boolean;
+  nativeMenu: boolean;
+}
+
+export type TagFlowMenuAction =
+  | "file:open"
+  | "file:apply-selected"
+  | "file:apply-high-confidence"
+  | "actions:manual-search"
+  | "actions:skip-selected"
+  | "view:toggle-filter"
+  | "view:toggle-tag-panel"
+  | "view:toggle-theme"
+  | "tags:auto"
+  | "tags:apple"
+  | "tags:spotify"
+  | "help:readme";
+
 export interface TagFlowApi {
   openFileDialog: () => Promise<string[]>;
+  openReadme: () => Promise<void>;
   getPathForFile: (file: File) => string;
   analyzeFiles: (paths: string[]) => Promise<AudioFileRecord[]>;
+  getCapabilities: () => Promise<TagFlowCapabilities>;
+  onMenuAction: (listener: (action: TagFlowMenuAction) => void) => () => void;
   manualSearch: (
     file: AudioFileRecord,
     input: ManualSearchInput,

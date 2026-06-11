@@ -85,11 +85,8 @@ export function UploadZone({
         }}
       />
       <span className="eyebrow">Import</span>
-      <h2>Drop local tracks to scan and match.</h2>
-      <p>
-        TagFlow reads existing tags, falls back to filename cleanup for messy downloads,
-        and ranks iTunes matches before anything is written.
-      </p>
+      <h2>Drop local tracks into the file list.</h2>
+      <p>{helperNote}</p>
       <div className="upload-actions">
         <button
           className="button button-primary"
@@ -105,7 +102,9 @@ export function UploadZone({
         >
           Choose Files
         </button>
-        <span className="upload-note">{helperNote}</span>
+        <span className="upload-note">
+          TagFlow reads existing tags, cleans weak filenames, and compares lookup matches before saving.
+        </span>
       </div>
     </section>
   );

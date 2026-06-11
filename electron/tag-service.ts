@@ -14,7 +14,6 @@ interface TagWriterStrategy {
   write: (
     file: AudioFileRecord,
     suggestion: SuggestedMetadata,
-    backupPath: string,
   ) => Promise<ApplyTagsResult>;
 }
 
@@ -36,27 +35,6 @@ function getTagLib(): Promise<TagLib> {
   }
 
   return tagLibPromise;
-}
-
-async function createBackup(filePath: string): Promise<string> {
-  const preferredBackupPath = `${filePath}.bak`;
-
-  if (!(await fs.pathExists(preferredBackupPath))) {
-    await fs.copy(filePath, preferredBackupPath, {
-      overwrite: false,
-      errorOnExist: true,
-    });
-    return preferredBackupPath;
-  }
-
-  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-  const timestampedBackupPath = `${filePath}.bak.${timestamp}`;
-  await fs.copy(filePath, timestampedBackupPath, {
-    overwrite: false,
-    errorOnExist: true,
-  });
-
-  return timestampedBackupPath;
 }
 
 async function fetchArtwork(
@@ -86,7 +64,7 @@ async function fetchArtwork(
 
 const universalWriter: TagWriterStrategy = {
   extension: "mp3",
-  async write(file, suggestion, backupPath) {
+  async write(file, suggestion) {
     const resolvedSuggestion = await hydrateSuggestedMetadata(suggestion);
     const original = new Uint8Array(await fs.readFile(file.path));
     const tagLib = await getTagLib();
@@ -123,7 +101,7 @@ const universalWriter: TagWriterStrategy = {
       return {
         success: true,
         path: file.path,
-        backupPath,
+        backupPath: null,
         error: null,
         appliedFormat: file.extension,
         appliedSuggestion: resolvedSuggestion,
@@ -156,16 +134,13 @@ export async function applyTagsToFile(
     };
   }
 
-  let backupPath: string | null = null;
-
   try {
-    backupPath = await createBackup(file.path);
-    return await writer.write(file, suggestion, backupPath);
+    return await writer.write(file, suggestion);
   } catch (error) {
     return {
       success: false,
       path: file.path,
-      backupPath,
+      backupPath: null,
       error: `Failed to write tags: ${errorMessage(error)}`,
       appliedFormat: null,
       appliedSuggestion: null,

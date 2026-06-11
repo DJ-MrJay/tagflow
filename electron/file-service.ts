@@ -2,7 +2,7 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { parseFile } from "music-metadata";
 import { deriveFilenameGuess, hasMeaningfulMetadata } from "../src/lib/filenameCleaner";
-import { searchItunesTracks } from "../src/lib/itunes";
+import { getLookupCapabilities, searchCatalogTracks } from "./lookup-service";
 import type {
   AudioFileRecord,
   FileMetadata,
@@ -221,6 +221,8 @@ async function analyseFile(filePath: string): Promise<AudioFileRecord> {
       bestSuggestion: null,
       status: "unsupported",
       error: "Unsupported file type. TagFlow currently targets MP3, M4A, and FLAC imports.",
+      lookupWarning: null,
+      resolvedSources: [],
       writeSupported: false,
       backupPath: null,
     };
@@ -238,9 +240,14 @@ async function analyseFile(filePath: string): Promise<AudioFileRecord> {
 
     let suggestions: AudioFileRecord["suggestions"] = [];
     let searchError: string | null = null;
+    let lookupWarning: string | null = null;
+    let resolvedSources: AudioFileRecord["resolvedSources"] = [];
 
     try {
-      suggestions = await searchItunesTracks(searchSeed.query, searchContext);
+      const result = await searchCatalogTracks(searchSeed.query, searchContext, "auto");
+      suggestions = result.suggestions;
+      lookupWarning = result.warning;
+      resolvedSources = result.resolvedSources;
     } catch (error) {
       searchError = errorMessage(error);
     }
@@ -258,6 +265,8 @@ async function analyseFile(filePath: string): Promise<AudioFileRecord> {
       bestSuggestion,
       status: resolveStatus(bestSuggestion, searchError),
       error: searchError,
+      lookupWarning,
+      resolvedSources,
       writeSupported: WRITE_SUPPORTED_EXTENSIONS.has(extension),
       backupPath: null,
     };
@@ -273,6 +282,8 @@ async function analyseFile(filePath: string): Promise<AudioFileRecord> {
       bestSuggestion: null,
       status: "error",
       error: `Failed to read file metadata: ${errorMessage(error)}`,
+      lookupWarning: null,
+      resolvedSources: [],
       writeSupported: WRITE_SUPPORTED_EXTENSIONS.has(extension),
       backupPath: null,
     };
@@ -314,8 +325,11 @@ export async function runManualSearch(
     filename: file.filename,
   };
 
+  const result = await searchCatalogTracks(searchSeed.query, searchContext, input.source);
   return {
+    ...result,
     searchSeed,
-    suggestions: await searchItunesTracks(searchSeed.query, searchContext),
   };
 }
+
+export { getLookupCapabilities };

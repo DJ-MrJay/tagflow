@@ -555,6 +555,10 @@ async function fetchLyrics(suggestion: SuggestedMetadata): Promise<string | null
 async function fetchAppleMusicDetails(
   suggestion: SuggestedMetadata,
 ): Promise<Partial<SuggestedMetadata>> {
+  if (suggestion.lookupSource !== "apple") {
+    return {};
+  }
+
   const pageUrl = suggestion.trackViewUrl || suggestion.collectionViewUrl;
   if (!pageUrl) {
     return {};
@@ -641,7 +645,7 @@ async function fetchAppleMusicDetails(
         suggestion.collectionId,
       appleCatalogId:
         toNumber(track?.contentDescriptor?.identifiers?.storeAdamID) ??
-        suggestion.trackId,
+        suggestion.appleCatalogId,
       editorialNotes:
         decodeHtml(header?.modalPresentationDescriptor?.paragraphText ?? "") || null,
       countryCode: suggestion.countryCode || storefrontCode?.toUpperCase() || null,
@@ -777,7 +781,7 @@ export async function searchItunesTracks(
       );
 
       return {
-        trackId: result.trackId ?? Date.now() + index,
+        trackId: String(result.trackId ?? `apple-${Date.now()}-${index}`),
         collectionId: result.collectionId ?? null,
         artistId: result.artistId ?? null,
         title,
@@ -821,6 +825,8 @@ export async function searchItunesTracks(
         vendor: null,
         editorialNotes: null,
         comments: null,
+        lookupSource: "apple",
+        sourceUrl: result.trackViewUrl ?? result.collectionViewUrl ?? null,
         confidence,
         notes: buildNotes(confidence, context, result.trackTimeMillis),
       } satisfies SuggestedMetadata;

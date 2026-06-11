@@ -292,6 +292,8 @@ async function analyseBrowserFile(file: File): Promise<AudioFileRecord> {
       bestSuggestion: null,
       status: "unsupported",
       error: "Unsupported file type. TagFlow currently targets MP3, M4A, and FLAC imports.",
+      lookupWarning: null,
+      resolvedSources: [],
       writeSupported: false,
       backupPath: null,
     };
@@ -336,6 +338,8 @@ async function analyseBrowserFile(file: File): Promise<AudioFileRecord> {
     bestSuggestion,
     status: resolveStatus(bestSuggestion, searchError),
     error: searchError,
+    lookupWarning: null,
+    resolvedSources: suggestions.length > 0 ? ["apple"] : [],
     writeSupported: true,
     backupPath: null,
   };
@@ -359,6 +363,12 @@ export async function runBrowserManualSearch(
   file: AudioFileRecord,
   input: ManualSearchInput,
 ): Promise<SearchResultPayload> {
+  if (input.source === "spotify") {
+    throw new Error(
+      "Spotify lookup is only available in the desktop app because it requires private API credentials.",
+    );
+  }
+
   const artist = input.artist.trim() || file.current.artist || file.searchSeed.artist || "";
   const title =
     input.title.trim() ||
@@ -379,6 +389,9 @@ export async function runBrowserManualSearch(
 
   return {
     searchSeed,
+    warning: null,
+    resolvedSources: ["apple"],
+    lookupSource: input.source,
     suggestions: await searchItunesTracks(searchSeed.query, {
       title: title || file.filename,
       artist: artist || null,

@@ -6,9 +6,14 @@ interface FileTableProps {
   onSelect: (fileId: string) => void;
 }
 
+const LOOKUP_LABELS: Record<NonNullable<AudioFileRecord["bestSuggestion"]>["lookupSource"], string> = {
+  apple: "Apple",
+  spotify: "Spotify",
+};
+
 function confidenceLabel(file: AudioFileRecord): string {
   if (!file.bestSuggestion) {
-    return "No match";
+    return "Manual";
   }
 
   return `${Math.round(file.bestSuggestion.confidence.overall * 100)}%`;
@@ -21,7 +26,7 @@ function statusLabel(file: AudioFileRecord): string {
     case "manual-review":
       return "Review";
     case "applied":
-      return "Applied";
+      return "Saved";
     case "skipped":
       return "Skipped";
     case "unsupported":
@@ -60,9 +65,12 @@ export function FileTable({ files, selectedFileId, onSelect }: FileTableProps) {
       <table className="file-table">
         <thead>
           <tr>
-            <th>File</th>
-            <th>Current</th>
-            <th>Search Source</th>
+            <th>Filename</th>
+            <th>Artist</th>
+            <th>Title</th>
+            <th>Album</th>
+            <th>Year</th>
+            <th>Lookup</th>
             <th>Confidence</th>
             <th>Status</th>
           </tr>
@@ -79,11 +87,29 @@ export function FileTable({ files, selectedFileId, onSelect }: FileTableProps) {
                 <span>{file.extension.toUpperCase()}</span>
               </td>
               <td>
-                <strong>{file.current.artist || "Unknown artist"}</strong>
-                <span>{file.current.title || "Unknown title"}</span>
+                <strong>{file.bestSuggestion?.artist || file.current.artist || "Unknown artist"}</strong>
+                <span>{file.current.artist ? `Current: ${file.current.artist}` : "Current: —"}</span>
               </td>
               <td>
-                <strong>{file.searchSeed.source}</strong>
+                <strong>{file.bestSuggestion?.title || file.current.title || "Unknown title"}</strong>
+                <span>{file.current.title ? `Current: ${file.current.title}` : "Current: —"}</span>
+              </td>
+              <td>
+                <strong>{file.bestSuggestion?.album || file.current.album || "Single"}</strong>
+                <span>{file.current.album ? `Current: ${file.current.album}` : "Current: —"}</span>
+              </td>
+              <td>
+                <strong>{file.bestSuggestion?.year || file.current.year || "—"}</strong>
+                <span>{file.current.year ? `Current: ${file.current.year}` : "Current: —"}</span>
+              </td>
+              <td>
+                <strong>
+                  {file.bestSuggestion
+                    ? LOOKUP_LABELS[file.bestSuggestion.lookupSource]
+                    : file.resolvedSources[0]
+                      ? LOOKUP_LABELS[file.resolvedSources[0]]
+                      : "Pending"}
+                </strong>
                 <span>{file.searchSeed.query || "No query"}</span>
               </td>
               <td>
